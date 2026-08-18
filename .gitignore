@@ -1,0 +1,5 @@
+# Ignore working files
+*.asv
+
+# Ignore results folder
+results/
