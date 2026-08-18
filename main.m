@@ -22,7 +22,7 @@ bm = binding_model;
 n = 15;                 % No. of base pairs of DNA
 T = 298;                % Temperature of experiment (K)
 sites = 7;              % No. of consecutive DNA base pairs that protein binds to
-modes = 2;              % No. of binding modes that the protein has (either 1 or 2)
+modes = 1;              % No. of binding modes that the protein has (either 1 or 2)
 
 % Protein data should be present in a .dat file with columns -
 % 1. Concentration (micromolar)
@@ -30,7 +30,7 @@ modes = 2;              % No. of binding modes that the protein has (either 1 or
 % 3. Standard deviation of measurements
 % File to be placed in ./data/
 
-pname = "p6B_T69D";           % Filename containing protein information in ./data/
+pname = "NHP6A";           % Filename containing protein information in ./data/
 if ~isfile(fullfile(pwd, "data", pname + ".dat"))
     error("Input data file for given protein name not found in ./data/")
 end
