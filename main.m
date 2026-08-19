@@ -19,10 +19,21 @@ bm = binding_model;
 
 %% Input parameters
 
+pname = "NHP6A";        % Filename containing protein information in ./data/
 n = 15;                 % No. of base pairs of DNA
 T = 298;                % Temperature of experiment (K)
 sites = 7;              % No. of consecutive DNA base pairs that protein binds to
 modes = 1;              % No. of binding modes that the protein has (either 1 or 2)
+
+%% Verify input parameters
+
+if n >= 3*sites
+    error("More than two proteins binding to a single fragment is currently not supported. Kindly set n < 3*sites .")
+end
+
+if modes ~= 1 && modes ~= 2
+    error("Only 1 and 2 binding modes are currently supported. Kindly set modes = 1 or 2.")
+end
 
 % Protein data should be present in a .dat file with columns -
 % 1. Concentration (micromolar)
@@ -30,13 +41,15 @@ modes = 1;              % No. of binding modes that the protein has (either 1 or
 % 3. Standard deviation of measurements
 % File to be placed in ./data/
 
-pname = "NHP6A";           % Filename containing protein information in ./data/
-if ~isfile(fullfile(pwd, "data", pname + ".dat"))
+if ~isfile(fullfile(pwd, "data", pname + ".dat"))   % Check if input data is present
     error("Input data file for given protein name not found in ./data/")
 end
 
 data = readmatrix(fullfile(pwd, "data", pname + ".dat"));
-concs = data(:, 1).';   % Experimental concentrations
+if shape(data, 2) ~= 3
+    error("Input data does not contain exactly 3 columns. Kindly check if correct data is provided.")
+end
+concs = data(:, 1).';   % Experimental concentrations (u mol)
 exp_S = data(:, 2).';   % Measured anisotropies
 err_S = data(:, 3).';   % Standard deviations of experimental data
 
@@ -47,12 +60,10 @@ if modes == 1               % Need to fit [binding energy (B. E.), anisotropy at
     lb = [-50, 0];              % Lower bounds
     ub = [0, 0.4];              % Upper bounds 
     ival = [-29, 0.212];        % Initial guess
-elseif modes == 2           % Need to fit [major B.E., minor B.E., anisotropy at saturation]
+else                       % Need to fit [major B.E., minor B.E., anisotropy at saturation]
     lb = [-50, -50, 0];         % Lower bounds
     ub = [0, 0, 0.4];           % Upper bounds
     ival = [-35, -29, 0.212];   % Initial guess
-else
-    error("More than two binding modes currrently not supported")
 end
 
 %% Run optimization
@@ -103,7 +114,7 @@ hold on;
 h = errorbar(concs, exp_S, err_S, 'or');
 set(get(h, 'Parent'), 'XScale', 'log');
 semilogx(concs, calc_S, 'b', concs, calc_S_1, '--', concs, calc_S_2, '--');
-xlabel('Concentration mol/L')
+xlabel('Concentration (u mol/L)')
 ylabel('Anisotropy')
 s_max = fval(end);
 yline([s_min+(s_max-s_min) s_min+2*(s_max-s_min)], '--', {'1p saturating sig', '2p saturating sig'})
@@ -139,7 +150,7 @@ xlabel('Base Pair')
 ylabel('Concentration mol/L')
 zlabel('Probability of binding')
 
-exp_labels = {'Conc(mol L-1)' 'Calculated S' 'Signal change for 1 protein' 'Signal change for 2 proteins' 'No. of proteins bound'};
+exp_labels = {'Conc(u mol L-1)' 'Calculated S' 'Signal change for 1 protein' 'Signal change for 2 proteins' 'No. of proteins bound'};
 exp_matrix = num2cell([concs' calc_S' calc_S_1' calc_S_2' no_p']);
 exp = [exp_labels; exp_matrix];
 
@@ -149,10 +160,20 @@ op_loc = fullfile(pwd, "results", string(pname));
 mkdir(op_loc)
 rmdir(op_loc, 's')
 mkdir(op_loc)
+
+% Save signal changes per protein bound as .xlsx
 delete(fullfile(op_loc, string(pname)+".xlsx"))
 writecell(exp, fullfile(op_loc, string(pname)+".xlsx"))
+
+% Save the displayed graph
 saveas(gcf, fullfile(op_loc, string(pname)+".png"))
+
+% Save calculated anisotropy as .mat
 p_var = {pname, concs, exp_S, err_S, calc_S};
 save(fullfile(op_loc, string(pname) + ".mat"), "p_var");
+
 fprintf("\nOutput files saved to %s\n", op_loc)
+
+%% Done
+
 disp("Done")
